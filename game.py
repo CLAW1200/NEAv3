@@ -25,8 +25,8 @@ class Projectile:
         self.trajectory = []
         
         # Set the time step
-        self.dt = 0.03
-        
+        self.dt = 0.05
+                
         # Initialize the air resistance force
         self.Fx = -0.5 * Cd * B2 * vx0 * math.sqrt(vx0**2 + vy0**2)
         self.Fy = -0.5 * Cd * B2 * vy0 * math.sqrt(vx0**2 + vy0**2)
@@ -102,7 +102,7 @@ B2 = 0.00004
 # Set the initial position and velocity of the cannon
 cannon_x = 100
 cannon_y = SCREEN_HEIGHT - 100
-cannon_vx = 10
+cannon_vx = 0
 cannon_vy = 10
 
 # Set the initial position and size of the target
@@ -172,14 +172,27 @@ while running:
         # Set the background color
         screen.fill(bg_color)
 
-        # Draw the cannon
-        pygame.draw.rect(screen, (0, 0, 0), (cannon_x, cannon_y, 20, 20))
+        # Draw the cannon with cannonTube.png at 10,10
+        cannon = pygame.image.load("assets\cannonTube.png")
+
+        #angle the cannon to match the velocity of the projectile
+        angle = math.atan2(projectile_vy, projectile_vx) - math.pi/8
+        cannon = pygame.transform.rotate(cannon, math.degrees(angle))
+        screen.blit(cannon, (cannon_x-40, cannon_y-25))
+
+
+
+
 
         # Draw the target
         pygame.draw.rect(screen, (0, 0, 0), (target_x, target_y, target_width, target_height))
 
         # Draw the projectile
-        pos = projectile.get_position()
+        #set projectile pos to center of cannon 
+        if not launched:
+            pos = cannon.get_rect().center
+        else:
+            pos = (projectile.x, projectile.y)
         pygame.draw.circle(screen, (255, 0, 0), pos, 4)
 
         # Draw the projectile's trajectory on the screen

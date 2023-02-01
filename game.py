@@ -60,6 +60,12 @@ class Projectile: # Projectile class
         # Add the current position of the projectile to the list of points in its trajectory
         self.trajectory.append((self.x, self.y)) # Add the current position of the projectile to the list of points in its trajectory
 
+    def bounce(self, absorption):
+        """
+        A method to bounce the projectile off the ground.
+        """
+        self.vy = -self.vy / absorption # Reverse the sign of the y-velocity and reduce it by the absorption multiplier
+
 
     def set_vx_vy(self, vx, vy):
         """
@@ -122,12 +128,24 @@ class Obstacle(Goal):
         super().__init__(x, y, width, height) # Call the constructor of the Goal class
         self.color = (255, 155, 155) # Set the color of the obstacle to a light red (pre defined color and not a parameter)
 
+    def check_collision(self, projectile):
+        """
+        Only check for collision if the projectile is above the obstacle.
+        """
+        x, y = projectile.get_position()
+        if y > self.y:
+            return super().check_collision(projectile)# in oop this is called overriding a method
+        else:
+            return False
+
+        
+
 
 class Game: # A class to represent the game loop
     def run(self): # A method to run the game loop
         pygame.init() # Initialize pygame
-        clock = pygame.time.Clock() # Set frame rate to 60 fps
-        SCREEN_WIDTH = 800 # Set the width of the screen
+        pygame.time.Clock() # Set frame rate to 60 fps
+        SCREEN_WIDTH = 1400 # Set the width of the screen
         SCREEN_HEIGHT = 600 # Set the height of the screen
 
         screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT)) # Create a screen with the specified width and height
@@ -141,7 +159,6 @@ class Game: # A class to represent the game loop
         target_y = SCREEN_HEIGHT - 100 # Set the initial y-position of the target in pixels
         target_width = 20 # Set the width of the target in pixels
         target_height = 20 # Set the height of the target in pixels
-        # Set the initial position, velocity, mass, and drag coefficient of the projectile
         projectile_x = cannon_x # Set the initial x-position of the projectile to the x-position of the cannon
         projectile_y = cannon_y # Set the initial y-position of the projectile to the y-position of the cannon
         projectile_vx = cannon_vx # Set the initial x-velocity of the projectile to the x-velocity of the cannon
@@ -149,9 +166,13 @@ class Game: # A class to represent the game loop
         projectile_m = 2 # Set the mass of the projectile to 2 kilograms
         projectile_Cd = 0.47 # Set the drag coefficient of the projectile to 0.47
         projectile_colour = (255, 255, 255) # Set the color of the projectile to white
-
+        levelCounter = 20 # Create a variable to store the current level
+        obstacleList = [] # Create an empty list to store the obstacles
+        def obstacleManager():
+            obstacleList.clear()
+            for i in range(levelCounter):
+                obstacleList.append(Obstacle(random.randint(0,SCREEN_WIDTH), random.randint(0,SCREEN_HEIGHT), random.randint(20,300), 5)) # Add an obstacle to the list of obstacles
         running = True # A boolean variable to indicate if the game is running
-
         while running: # A loop to run the game while th boolean variable is True
             projectile = Projectile(projectile_x, projectile_y, projectile_vx, projectile_vy, projectile_m, projectile_Cd, B2, 9.81) # Create a projectile object with the specified position, velocity, mass, drag coefficient, and acceleration due to gravity
             game_over = False # A boolean variable to indicate if the game is over
@@ -171,11 +192,9 @@ class Game: # A class to represent the game loop
                 
                 target = Goal(target_x, target_y, target_width, target_height) # Create a target object with the specified position and size
                 target.draw(screen) # Draw the target on the screen
-
-                obstacle1 = Obstacle(400, 400, 100, 100) # Create an obstacle object with the specified position and size
-                obstacle1.draw(screen) # Draw the obstacle on the screen
-                obstacle2 = Obstacle(200, 200, 100, 100) # Repeat the process for the second obstacle
-                obstacle2.draw(screen) # Repeat the process for the second obstacle
+                
+                for i in range(len(obstacleList)):
+                    obstacleList[i].draw(screen)
 
                 if launched: # If the projectile has been launched
                     power = ((mouse_x - cannon_x)**2 + (mouse_y - cannon_y)**2)**0.5 / 5 # Calculate the power of the projectile based on the distance between the cannon and the mouse
@@ -193,14 +212,18 @@ class Game: # A class to represent the game loop
 
                 if target.check_collision(projectile): # Call the method to check if the projectile has hit the target
                     hit_target = True # Set the boolean variable to True to indicate that the projectile has hit the target
+                    levelCounter += 1
+                    obstacleManager()
                     print ("You hit the target!") # Print a message to the console
                     break
-                if obstacle1.check_collision(projectile): # Call the method to check if the projectile has hit the first obstacle
-                    print ("You hit the obstacle!") # Same as above
-                    break
-                if obstacle2.check_collision(projectile): 
-                    print ("You hit the obstacle!")
-                    break
+                for i in range(len(obstacleList)):
+                    if obstacleList[i].check_collision(projectile) and not in_flight:
+                        obstacleManager()
+                    elif obstacleList[i].check_collision(projectile) and in_flight:
+                        print("You hit an obstacle!")
+                        projectile.bounce(2)
+                        break
+
                 if projectile.x < 0 or projectile.x > SCREEN_WIDTH or projectile.y > SCREEN_HEIGHT: # If the projectile has gone out of the screen 
                     print ("You missed the target!")
                     break
@@ -241,3 +264,5 @@ class Game: # A class to represent the game loop
                                 pass # Do nothing
         pygame.quit() # Quit the game
 
+game = Game()
+game.run()

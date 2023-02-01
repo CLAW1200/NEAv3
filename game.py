@@ -80,7 +80,52 @@ class Projectile:
         Return the current velocity of the projectile.
         """
         return self.vx, self.vy
-    
+
+class Goal:
+    """
+    A class to represent the goal.
+    """
+    def __init__(self, x, y, width, height):
+        """
+        Initialize the goal with its position and size.
+        """
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.color = (155, 255, 155)
+        
+    def draw(self, screen):
+        """
+        Draw the goal on the screen.
+        """
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
+
+    def check_collision(self, projectile):
+        """
+        Check if the projectile has collided with the goal.
+        """
+        # Get the position of the projectile
+        x, y = projectile.get_position()
+        # Check if the projectile is within the goal
+        if x > self.x and x < self.x + self.width and y > self.y and y < self.y + self.height:
+            return True
+        else:
+            return False
+
+#Obstacle class that inherits from the Goal class
+class Obstacle(Goal):
+    """
+    A class to represent an obstacle.
+    """
+    def __init__(self, x, y, width, height):
+        """
+        Initialize the obstacle with its position and size.
+        """
+        super().__init__(x, y, width, height)
+        self.color = (255, 155, 155)
+
+
 
 # Initialize the game
 pygame.init()
@@ -94,7 +139,7 @@ SCREEN_HEIGHT = 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 # Set the background color
-bg_color = (10, 10, 10)
+bg_color = (32, 20, 22)
 # Set the constant for air resistance
 B2 = 0.00004
 # Set the initial position and velocity of the cannon
@@ -133,10 +178,21 @@ while running:
         cannon = pygame.image.load("assets\cannonTube.png")
         mouse_x, mouse_y = pygame.mouse.get_pos()
         angle = math.atan2(mouse_y - cannon_y, mouse_x - cannon_x)
-        cannon = pygame.transform.rotate(cannon, math.degrees(-angle))
-        screen.blit(cannon, (cannon_x-55, cannon_y-20))
+        cannon = pygame.transform.rotate(cannon, math.degrees(-angle)-15)
+        screen.blit(cannon, (cannon_x-30, cannon_y-40))
+        
         # Draw the target
-        pygame.draw.rect(screen, (0, 0, 0), (target_x, target_y, target_width, target_height))
+        target = Goal(target_x, target_y, target_width, target_height)
+        target.draw(screen)
+
+        #draw obstacles
+        obstacle1 = Obstacle(400, 400, 100, 100)
+        obstacle1.draw(screen)
+        obstacle2 = Obstacle(200, 200, 100, 100)
+        obstacle2.draw(screen)
+
+
+
         if launched:
             power = ((mouse_x - cannon_x)**2 + (mouse_y - cannon_y)**2)**0.5 / 5
             projectile.set_vx_vy(math.cos(-angle)*power, math.sin(-angle)*power)
@@ -149,19 +205,21 @@ while running:
                 pygame.draw.lines(screen, projectile_colour, False, projectile.trajectory, 2)
             if projectile.y > SCREEN_HEIGHT:
                 in_flight = False
-            if projectile.x > target_x and projectile.x < target_x + target_width and projectile.y > target_y and projectile.y < target_y + target_height:
-                hit_target = True
-                in_flight = False
+
 
         # Check if the projectile has hit the target
-        if projectile.x > target_x and projectile.x < target_x + target_width and projectile.y > target_y and projectile.y < target_y + target_height:
+        if target.check_collision(projectile):
             hit_target = True
-            game_over = False
             print ("You hit the target!")
+            break
+        if obstacle1.check_collision(projectile):
+            print ("You hit the obstacle!")
+            break
+        if obstacle2.check_collision(projectile):
+            print ("You hit the obstacle!")
             break
         # Check if the projectile has gone out of the screen
         if projectile.x < 0 or projectile.x > SCREEN_WIDTH or projectile.y > SCREEN_HEIGHT:
-            game_over = False
             print ("You missed the target!")
             break
 

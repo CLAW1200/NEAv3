@@ -25,8 +25,6 @@ class Projectile: # Projectile class
         self.wind_angle = 0 # Wind direction in degrees
         self.wind_x = 0 # Wind speed in m/s (x-component)
         self.wind_y = 0 # Wind speed in m/s (y-component)
-        # Set the colour of the projectile's trajectory
-        self.trace_colour = (100, 0, 0) # A line that follows the projectile path
         self.hit_target = False # A boolean variable to indicate if the projectile has hit the target
 
 
@@ -53,7 +51,7 @@ class Projectile: # Projectile class
         A method to set the wind speed and direction.
         """
         self.wind_speed = wind_speed
-        self.wind_angle = -wind_angle
+        self.wind_angle = wind_angle
         self.wind_x = self.wind_speed * math.cos(math.radians(self.wind_angle))
         self.wind_y = self.wind_speed * math.sin(math.radians(self.wind_angle))
     
@@ -245,14 +243,14 @@ class Cannon:
 
 
 class ProjectileImage:
-    def __init__(self, x, y):
+    def __init__(self, x, y, size):
         """
         Initialize the projectile image with its position and size.
         """
         self.x = x
         self.y = y
-        self.size = 5
-        self.projectile_colour = (255, 255, 255) # Set the colour of the projectile to white (pre defined colour and not a parameter)
+        self.size = size
+        self.projectile_colour = (255, 255, 255)
 
     def draw(self, screen, x, y):
         pygame.draw.circle(screen, (self.projectile_colour), (int(x), int(y)), self.size) # Draw the projectile on the screen
@@ -263,6 +261,12 @@ class ProjectileImage:
         """
         self.x = x
         self.y = y
+    
+    def set_colour(self, colour):
+        """
+        A method to set the colour of the projectile image.
+        """
+        self.projectile_colour = colour
 
 class WindArrow:
     def __init__(self, x, y):
@@ -289,6 +293,7 @@ class WindArrow:
         """
         A method to rotate the triangle by a given angle
         """
+        angle = -angle - 180
         center_x = self.x + 20
         center_y = self.y
         points = [(self.x, self.y), (self.x + 40, self.y + 10), (self.x + 40, self.y - 10)]
@@ -317,7 +322,7 @@ class Game: # A class to represent the game loop
         """
         self.bg_colour = (30, 30, 30) # Set the background colour of the screen to a dark red (pre defined colour and not a parameter)
         self.B2 = 0.00004 # Set the drag coefficient of the projectile (pre defined value and not a parameter)
-        self.floor = Obstacle(0, self.SCREEN_HEIGHT-5, self.SCREEN_WIDTH, 50) # Create a floor object with the specified position and size
+       
 
         """
         Set up target variables
@@ -356,6 +361,12 @@ class Game: # A class to represent the game loop
         A function to manage obstacles
         """
         self.obstacleList.clear() # Clear the list of obstacles
+
+        self.obstacleList.append(Obstacle(0, self.SCREEN_HEIGHT-5, self.SCREEN_WIDTH, 50)) # Create a floor object with the specified position and size
+        self.obstacleList.append(Obstacle(0, -45, self.SCREEN_WIDTH, 50)) # Create a ceiling object with the specified position and size
+        self.obstacleList.append(Obstacle(self.SCREEN_WIDTH-5, 0, 50, self.SCREEN_HEIGHT)) # Create a right wall object with the specified position and size
+
+
         for i in range(self.levelCounter): # Loop through the number of obstacles for the current level
             self.obstacleList.append(Obstacle(random.randint(0,self.SCREEN_WIDTH), random.randint(0,self.SCREEN_HEIGHT), random.randint(20,100), random.randint(20,100))) # Add an obstacle to the list of obstacles
 
@@ -364,7 +375,8 @@ class Game: # A class to represent the game loop
             self.levelCounter += 3 # Increase the level counter by 1
             self.target = Goal(self.target_x, random.randint(50, self.SCREEN_HEIGHT-50), self.target_width, self.target_height) # Create a target object with the specified position and size
             self.obstacleManager() # Call the function to manage the obstacles
-            self.projectile.set_wind(random.randint(-1,1) * self.levelCounter/20, random.randint(-45,45))
+            self.projectile.set_wind((random.random() * self.levelCounter/2), random.randint(0,360))
+            self.projectileImage.set_colour((random.randint(200,255), random.randint(200,255), random.randint(200,255))) # Set the colour of the projectile to a random colour
             self.game_over = True # Set the boolean variable to True to indicate that the game is over
         else:
             self.game_over = True # Set the boolean variable to True to indicate that the game is over
@@ -377,9 +389,9 @@ class Game: # A class to represent the game loop
 
         """Set Level Start Conditions"""
         self.projectile = Projectile(self.cannon.get_center()[0], self.cannon.get_center()[1], self.projectile_vx, self.projectile_vy, self.projectile_m, self.projectile_Cd, self.B2, 9.81) # Create a projectile object with the specified position, velocity, mass, drag coefficient, and acceleration due to gravity
-        self.projectileImage = ProjectileImage(self.cannon.get_center()[0], self.cannon.get_center()[1]) # Create a projectile image object with the specified position and size
-        self.windArrow = WindArrow(30, 70)    
-
+        self.projectileImage = ProjectileImage(self.cannon.get_center()[0], self.cannon.get_center()[1], 5) # Create a projectile image object with the specified position and size
+        self.windArrow = WindArrow(30, 70)
+        self.obstacleManager()
 
         while self.running: # A loop to run the game while th boolean variable is True
 
@@ -399,13 +411,18 @@ class Game: # A class to represent the game loop
 
                 """UPDATE THE GAME STATE"""
                 mouse_x, mouse_y = pygame.mouse.get_pos() # Get the position of the mouse in pixels inside the window
-                angle = (math.atan2(mouse_y - self.cannon.y, mouse_x -  self.cannon.x)) # Calculate the angle between the cannon and the mouse
-                self.cannon.rot_center(math.degrees(-angle)-13)
+                angle_projectile = (math.atan2(mouse_y - self.projectile.y, mouse_x -  self.projectile.x)) # Calculate the angle between the projectile and the mouse
+                angle_cannon = (math.atan2(mouse_y - self.projectile.y, mouse_x -  self.projectile.x)) # Calculate the angle between the cannon and the mouse
+                
 
+                if not self.in_flight: # If the projectile is not in flight
+                    self.cannon.rot_center(math.degrees(-angle_cannon)-20)
+                    self.cannon.set_power(((mouse_x -  self.cannon.x)**2 + (mouse_y - self.cannon.y)**2)**0.5 / 5) # Calculate the power of the projectile based on the distance between the cannon and the mouse
+                    self.projectile.set_vx_vy(math.cos(-angle_projectile)*self.cannon.get_power(), math.sin(-angle_projectile)*self.cannon.get_power()) # Set the x-velocity and y-velocity of the projectile based on the power and angle between the cannon and the mouse
 
                 if self.launched: # If the projectile has been launched
                     self.cannon.set_power(((mouse_x -  self.cannon.x)**2 + (mouse_y - self.cannon.y)**2)**0.5 / 5) # Calculate the power of the projectile based on the distance between the cannon and the mouse
-                    self.projectile.set_vx_vy(math.cos(-angle)*self.cannon.get_power(), math.sin(-angle)*self.cannon.get_power()) # Set the x-velocity and y-velocity of the projectile based on the power and angle between the cannon and the mouse
+                    self.projectile.set_vx_vy(math.cos(-angle_projectile)*self.cannon.get_power(), math.sin(-angle_projectile)*self.cannon.get_power()) # Set the x-velocity and y-velocity of the projectile based on the power and angle between the cannon and the mouse
                     self.launched = False # Set the boolean variable to False to indicate that the projectile has been launched
                     self.in_flight = True # Set the boolean variable to True to indicate that the projectile is in flight
 
@@ -422,13 +439,9 @@ class Game: # A class to represent the game loop
                     if self.obstacleList[i].check_collision(self.projectile) and not self.in_flight: # If the projectile has hit an obstacle and is not in flight
                         self.obstacleManager() # Call the function to manage the obstacles
 
-                if self.floor.check_collision(self.projectile): # If the projectile has hit the floor
-                    pass
-
                 if self.projectile.x < 0 or self.projectile.x > self.SCREEN_WIDTH or self.projectile.y > self.SCREEN_HEIGHT: # If the projectile has gone out of the screen
                     self.levelManager(self.projectile.hit_target) # Call the function to manage the levels
-
-
+                    
                 """EVENT HANDLING"""
                 for event in pygame.event.get(): # Get all the events that occur
                     if event.type == pygame.QUIT: # If the user clicks the close button, end the game
@@ -450,19 +463,18 @@ class Game: # A class to represent the game loop
                 self.target.draw(self.screen) # Draw the target on the screen
                 for i in range(len(self.obstacleList)): # Loop through the list of obstacles
                     self.obstacleList[i].draw(self.screen) # Draw the obstacle on the screen
-                self.floor.draw(self.screen) # Draw the floor on the screen
+
                 self.windArrow.draw_rotate(self.projectile.wind_angle, self.screen) # Draw the wind arrow on the screen
 
                 if len(self.projectile.trajectory) > 1: # If the projectile has a trajectory
-                    pygame.draw.lines(self.screen, self.projectile_colour, False, self.projectile.trajectory, 1) # Draw the trajectory of the projectile on the screen
+                    pygame.draw.lines(self.screen, self.projectileImage.projectile_colour, False, self.projectile.trajectory, 1) # Draw the trajectory of the projectile on the screen
 
-                
                 font = pygame.font.SysFont("consolas", 20) # Set the font and size of the text that will be displayed on the screen
-                text = font.render(f"Cannon Velocity: {round(self.projectile.vx, 2)}, {round(self.projectile.vy, 2)} Wind Speed: {round(self.projectile.wind_speed,4)},  {round(self.projectile.wind_angle,4)} ", True, (255, 255, 255)) # Write the x-velocity and y-velocity of the cannon on the screen and round the values to 2 decimal places. Text is white
+                text = font.render(f"Cannon Velocity: {round(self.projectile.vx, 2)}, {round(self.projectile.vy, 2)} Wind Speed: {round(self.projectile.wind_speed,4)}m/s", True, (255, 255, 255)) # Write the x-velocity and y-velocity of the cannon on the screen and round the values to 2 decimal places. Text is white
                 self.screen.blit(text, (10, 10)) # Draw the text on the screen
                 text = font.render(f"Drag Coefficient: " + str(self.projectile_Cd) + ", Mass: " + str(self.projectile_m) + "Kg, Air Resistance: " + str(self.B2), True, (255, 255, 255)) # Write the drag coefficient, mass, and air resistance of the projectile on the screen. Text is white
                 self.screen.blit(text, (10, 30)) # Draw the text on the screen
-                
+
                 pygame.display.flip() # Update the screen
 
         pygame.quit() # Quit the game

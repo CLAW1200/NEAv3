@@ -38,6 +38,14 @@ class Projectile: # Projectile class
         # Initialize the lists of positions
         self.xs = [self.x] # A list of the x-positions of the projectile
         self.ys = [self.y] # A list of the y-positions of the projectile
+
+    def set_position(self, x, y):
+        """
+        A method to set the position of the projectile.
+        """
+        self.x = x # Set the x-position of the projectile to the value of the parameter x
+        self.y = y # Set the y-position of the projectile to the value of the parameter y
+        
         
     def update_position(self):
         # Calculate the air resistance force
@@ -134,53 +142,35 @@ class Obstacle(Goal):
         """
         return self.x, self.y, self.x + self.width, self.y + self.height # Return the coordinates of the obstacle as a tuple
 
-    def intersect(self, line):
+    def check_collision(self, projectile):
         """
-        Check if the line intersects with the obstacle.
+        A method to check if the projectile has collided with the goal.
         """
-        # get the coordinates of the obstacle
-        obstacle_x1, obstacle_y1, obstacle_x2, obstacle_y2 = self.get_coordinates()
-
-        # unpack the line into two points
-        x1, y1 = line[0]
-        x2, y2 = line[1]
-
-        # calculate the denominator
-        denominator = ((obstacle_y2 - obstacle_y1) * (x2 - x1)) - ((obstacle_x2 - obstacle_x1) * (y2 - y1))
-
-        # if the denominator is zero, the line is parallel to the obstacle and won't intersect
-        if denominator == 0:
-            return False
-
-        # calculate the numerator for the line's first point
-        numerator1 = ((obstacle_x2 - obstacle_x1) * (y1 - obstacle_y1)) - ((obstacle_y2 - obstacle_y1) * (x1 - obstacle_x1))
-
-        # calculate the numerator for the line's second point
-        numerator2 = ((obstacle_x2 - obstacle_x1) * (y2 - obstacle_y1)) - ((obstacle_y2 - obstacle_y1) * (x2 - obstacle_x1))
-
-        # check if the line intersects with the obstacle
-        r = numerator1 / denominator
-        s = numerator2 / denominator
-        if (r > 0) and (r < 1) and (s > 0) and (s < 1):
-            print ("Line intersects with obstacle")
+        x, y = projectile.get_position()
+        x1, y1, x2, y2 = self.get_coordinates()
+        #if projectile is inside the obstacle move it to the surface of the obstacle
+        if x > x1 and x < x2 and y > y1 and y < y2:
+            vx, vy = projectile.get_velocity()
+            if x < x1 + 5:
+                x = x1
+                vx = -vx
+            elif x > x2 - 5:
+                x = x2
+                vx = -vx
+            elif y < y1 + 5:
+                y = y1
+                vy = -vy
+            elif y > y2 - 5:
+                y = y2
+                vy = -vy
+            projectile.set_vx_vy(vx, vy)
+            projectile.x = x
+            projectile.y = y
             return True
         else:
             return False
 
 
-    def check_collision(self, projectile):
-        """
-        A method to check if the projectile has collided with the obstacle.
-        """
-        xs, ys = projectile.xs[-5:], projectile.ys[-5:] # get last 5 positions of projectile
-        #calculate lines between points and put them in a list
-        lines = []
-        for i in range(len(xs)-1):
-            lines.append(((xs[i], ys[i]), (xs[i+1], ys[i+1])))
-        #check if any of the lines intersect with the obstacle
-        for line in lines:
-            if self.intersect(line):
-                return True
                 
 class Game: # A class to represent the game loop
     def run(self): # A method to run the game loop
@@ -207,12 +197,12 @@ class Game: # A class to represent the game loop
         projectile_m = 2 # Set the mass of the projectile to 2 kilograms
         projectile_Cd = 0.47 # Set the drag coefficient of the projectile to 0.47
         projectile_colour = (255, 255, 255) # Set the color of the projectile to white
-        levelCounter = 20 # Create a variable to store the current level
+        levelCounter = 2 # Create a variable to store the current level
         obstacleList = [] # Create an empty list to store the obstacles
         def obstacleManager(): # A function to manage the obstacles
             obstacleList.clear() # Clear the list of obstacles
             for i in range(levelCounter): # Loop through the number of obstacles for the current level
-                obstacleList.append(Obstacle(random.randint(0,SCREEN_WIDTH), random.randint(0,SCREEN_HEIGHT), random.randint(20,300), 4)) # Add an obstacle to the list of obstacles
+                obstacleList.append(Obstacle(random.randint(0,SCREEN_WIDTH), random.randint(0,SCREEN_HEIGHT), random.randint(20,200), random.randint(20,200))) # Add an obstacle to the list of obstacles
         running = True # A boolean variable to indicate if the game is running
         while running: # A loop to run the game while th boolean variable is True
             projectile = Projectile(projectile_x, projectile_y, projectile_vx, projectile_vy, projectile_m, projectile_Cd, B2, 9.81) # Create a projectile object with the specified position, velocity, mass, drag coefficient, and acceleration due to gravity
@@ -255,18 +245,15 @@ class Game: # A class to represent the game loop
                     hit_target = True # Set the boolean variable to True to indicate that the projectile has hit the target
                     levelCounter += 1 # Increase the level counter by 1
                     obstacleManager() # Call the function to manage the obstacles
-                    print ("You hit the target!") # Print a message to the console
                     break # Break out of the loop
                 for i in range(len(obstacleList)): # Loop through the list of obstacles
                     if obstacleList[i].check_collision(projectile) and not in_flight: # If the projectile has hit an obstacle and is not in flight
                         obstacleManager() # Call the function to manage the obstacles
                     elif obstacleList[i].check_collision(projectile) and in_flight: # If the projectile has hit an obstacle and is in flight
-                        print("You hit an obstacle!") # Print a message to the console
-                        projectile.bounce(2) # Call the method to bounce the projectile off the obstacle
+                        projectile.bounce(4) # Call the method to bounce the projectile off the obstacle
                         break # Break out of the loop
 
                 if projectile.x < 0 or projectile.x > SCREEN_WIDTH or projectile.y > SCREEN_HEIGHT: # If the projectile has gone out of the screen 
-                    print ("You missed the target!") # Print a message to the console
                     break # Break out of the loop
 
                 font = pygame.font.SysFont("consolas", 20) # Set the font and size of the text that will be displayed on the screen

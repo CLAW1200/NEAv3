@@ -207,7 +207,11 @@ class Cannon:
         self.y = y
         self.cannon_image = pygame.image.load("assets\cannonTube.png") # Load the cannon image from the assets folder
         self.rot_cannon_image = pygame.image.load("assets\cannonTube.png") # Load the cannon image from the assets folder
+        self.scale = 1.1
+        self.cannon_image = pygame.transform.scale(self.cannon_image, (self.cannon_image.get_width() * self.scale, self.cannon_image.get_height() * self.scale))
+        self.rot_cannon_image = pygame.transform.scale(self.rot_cannon_image, (self.rot_cannon_image.get_width() * self.scale, self.rot_cannon_image.get_height() * self.scale))
         self.power = 0 # Create a variable to store the power of the cannon
+        
 
     def get_center(self):
         """
@@ -458,8 +462,7 @@ class Game: # A class to represent the game loop
                 self.screen.blit(text, (10, 10)) # Draw the text on the screen
                 text = font.render(f"Drag Coefficient: " + str(self.projectile_Cd) + ", Mass: " + str(self.projectile_m) + "Kg, Air Resistance: " + str(self.B2), True, (255, 255, 255)) # Write the drag coefficient, mass, and air resistance of the projectile on the screen. Text is white
                 self.screen.blit(text, (10, 30)) # Draw the text on the screen
-
-
+                
                 pygame.display.flip() # Update the screen
 
         pygame.quit() # Quit the game

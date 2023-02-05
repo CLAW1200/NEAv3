@@ -436,12 +436,12 @@ class Game: # A class to represent the game loop
                     self.levelManager(self.projectile.hit_target) # Call the function to manage the levels
 
                 for i in range(len(self.obstacleList)): # Run through the list of obstacles
-                    if self.obstacleList[i].check_collision(self.projectile) and not self.in_flight: # If the projectile has hit an obstacle and is not in flight
+                    #check collision with projectile or target
+                    if self.obstacleList[i].check_collision(self.projectile) and not self.in_flight : # Call the method to check if the projectile or target has hit the obstacle
                         self.obstacleManager() # Call the function to manage the obstacles
-
                 if self.projectile.x < 0 or self.projectile.x > self.SCREEN_WIDTH or self.projectile.y > self.SCREEN_HEIGHT: # If the projectile has gone out of the screen
                     self.levelManager(self.projectile.hit_target) # Call the function to manage the levels
-                    
+
                 """EVENT HANDLING"""
                 for event in pygame.event.get(): # Get all the events that occur
                     if event.type == pygame.QUIT: # If the user clicks the close button, end the game

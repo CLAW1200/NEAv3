@@ -73,7 +73,6 @@ class Projectile: # Projectile class
         self.Fx = self.Fx + self.wind_x
         self.Fy = self.Fy - self.wind_y
 
-
         # Calculate the acceleration of the projectile
         self.ax = self.Fx / self.m # A calculation of the x-component of the acceleration of the projectile
         self.ay = self.Fy / self.m # A calculation of the y-component of the acceleration of the projectile
@@ -159,6 +158,7 @@ class Obstacle(Goal):
         """
         Initialize the obstacle with its position and size.
         """
+        self.collision_range = 5
         super().__init__(x, y, width, height) # Call the constructor of the Goal class
         self.colour = (255, 100, 100) # Set the colour of the obstacle to a light red (pre defined colour and not a parameter)
         self.bounceAbsorption = 0.8 # Set the absorption multiplier of the obstacle
@@ -177,16 +177,16 @@ class Obstacle(Goal):
         #if projectile is inside the obstacle move it to the surface of the obstacle
         if x > x1 and x < x2 and y > y1 and y < y2:
             vx, vy = projectile.get_velocity()
-            if x < x1 + 5:
+            if x < x1 + self.collision_range:
                 x = x1
                 vx = -vx * self.bounceAbsorption
-            elif x > x2 - 5:
+            elif x > x2 - self.collision_range:
                 x = x2
                 vx = -vx * self.bounceAbsorption
-            elif y < y1 + 5:
+            elif y < y1 + self.collision_range:
                 y = y1
                 vy = -vy * self.bounceAbsorption
-            elif y > y2 - 5:
+            elif y > y2 - self.collision_range:
                 y = y2
                 vy = -vy * self.bounceAbsorption
             projectile.set_vx_vy(vx, vy)
@@ -304,8 +304,6 @@ class WindArrow:
             rotated_points.append((x, y))
         pygame.draw.polygon(screen, self.colour, rotated_points)
 
-        
-
 
 class Game: # A class to represent the game loop
     def __init__(self):
@@ -314,7 +312,7 @@ class Game: # A class to represent the game loop
         """
         pygame.init() # Initialize pygame
         pygame.time.Clock() # Set frame rate to 60 fps
-        self.SCREEN_WIDTH = 1400 # Set the width of the screen
+        self.SCREEN_WIDTH = 1000 # Set the width of the screen
         self.SCREEN_HEIGHT = 600 # Set the height of the screen
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT)) # Create a screen with the specified width and height
         """
@@ -428,19 +426,17 @@ class Game: # A class to represent the game loop
 
                 if self.in_flight: # If the projectile is in flight
                     self.projectile.update_position() # Call the method to update the position of the projectile
-                    if self.projectile.y > self.SCREEN_HEIGHT: # If the projectile has gone out of the screen
-                        self.in_flight = False # Set the boolean variable to False to indicate that the projectile is no longer in flight
 
                 if self.target.check_collision(self.projectile): # Call the method to check if the projectile has hit the target
                     self.projectile.hit_target = True # Set the boolean variable to True to indicate that the projectile has hit the target
                     self.levelManager(self.projectile.hit_target) # Call the function to manage the levels
-
                 for i in range(len(self.obstacleList)): # Run through the list of obstacles
                     #check collision with projectile or target
                     if self.obstacleList[i].check_collision(self.projectile) and not self.in_flight : # Call the method to check if the projectile or target has hit the obstacle
                         self.obstacleManager() # Call the function to manage the obstacles
-                if self.projectile.x < 0 or self.projectile.x > self.SCREEN_WIDTH or self.projectile.y > self.SCREEN_HEIGHT: # If the projectile has gone out of the screen
-                    self.levelManager(self.projectile.hit_target) # Call the function to manage the levels
+
+                if self.projectile.x < 0 or self.projectile.x > self.SCREEN_WIDTH or self.projectile.y > self.SCREEN_HEIGHT or self.projectile.x < 0:
+                    break
 
                 """EVENT HANDLING"""
                 for event in pygame.event.get(): # Get all the events that occur

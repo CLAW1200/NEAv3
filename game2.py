@@ -26,6 +26,9 @@ class Projectile: # Projectile class
         self.wind_x = 0 # Wind speed in m/s (x-component)
         self.wind_y = 0 # Wind speed in m/s (y-component)
         self.hit_target = False # A boolean variable to indicate if the projectile has hit the target
+        self.distance_traveled = 0 # The distance traveled by the 
+        self.distance_traveled_x = 0 # The distance traveled by the projectile in the x-direction
+        self.distance_traveled_y = 0 # The distance traveled by the projectile in the y-direction
 
 
         # Initialize the list of points in the projectile's trajectory
@@ -34,7 +37,7 @@ class Projectile: # Projectile class
         # Set the time step
         self.dt = 0.05 # Time step is how often the position of the projectile is updated in the simulation (not the same as the frame rate)
 
-        # Initialize the air resistance force
+        # Initialize the air resistance force using the drag formula
         self.Fx = -0.5 * Cd * B2 * vx0 * math.sqrt(vx0**2 + vy0**2) # The x-component of the air resistance force
         self.Fy = -0.5 * Cd * B2 * vy0 * math.sqrt(vx0**2 + vy0**2) # The y-component of the air resistance force
 
@@ -55,8 +58,6 @@ class Projectile: # Projectile class
         self.wind_x = self.wind_speed * math.cos(math.radians(self.wind_angle))
         self.wind_y = self.wind_speed * math.sin(math.radians(self.wind_angle))
     
-
-
     def set_position(self, x, y):
         """
         A method to set the position of the projectile.
@@ -69,7 +70,7 @@ class Projectile: # Projectile class
         self.Fx = -0.5 * self.Cd * self.B2 * self.vx * self.vx # A calculation of the x-component of the air resistance force
         self.Fy = -0.5 * self.Cd * self.B2 * self.vy * self.vy + self.gravity  # Reverse the sign of the y-component of the velocity so that the y-axis points up and is displayed correctly on the screen
 
-        #Add wind speed of 10 m/s
+        #Add wind speed to the air resistance force
         self.Fx = self.Fx + self.wind_x
         self.Fy = self.Fy - self.wind_y
 
@@ -88,6 +89,11 @@ class Projectile: # Projectile class
         self.ys.append(self.y) # Add the new y-position of the projectile to the list of y-positions
         # Add the current position of the projectile to the list of points in its trajectory
         self.trajectory.append((self.x, self.y)) # Add the current position of the projectile to the list of points in its trajectory
+        # Update the distance traveled by the projectile
+        self.distance_traveled = self.distance_traveled + math.sqrt((self.xs[-1] - self.xs[-2])**2 + (self.ys[-1] - self.ys[-2])**2) # Update the distance traveled by the projectile
+        self.distance_traveled_x = self.distance_traveled_x + math.sqrt((self.xs[-1] - self.xs[-2])**2) # Update the distance traveled by the projectile in the x-direction
+        self.distance_traveled_y = self.distance_traveled_y + math.sqrt((self.ys[-1] - self.ys[-2])**2) # Update the distance traveled by the projectile in the y-direction
+
 
 
     def set_vx_vy(self, vx, vy):
@@ -161,7 +167,7 @@ class Obstacle(Goal):
         self.collision_range = 5
         super().__init__(x, y, width, height) # Call the constructor of the Goal class
         self.colour = (255, 100, 100) # Set the colour of the obstacle to a light red (pre defined colour and not a parameter)
-        self.bounceAbsorption = 0.8 # Set the absorption multiplier of the obstacle
+        self.bounceAbsorption = 0.7 # Set the absorption multiplier of the obstacle
     def get_coordinates(self):
         """
         A method to return the coordinates of the obstacle.
@@ -336,8 +342,8 @@ class Game: # A class to represent the game loop
         self.projectile_y = 0 # Set the initial y-position of the projectile to the y-position of the cannon
         self.projectile_vx = 0 # Set the initial x-velocity of the projectile to the x-velocity of the cannon
         self.projectile_vy = 0 # Set the initial y-velocity of the projectile to the y-velocity of the cannon
-        self.projectile_m = 2 # Set the mass of the projectile to 2 kilograms
-        self.projectile_Cd = 0.47 # Set the drag coefficient of the projectile to 0.47
+        self.projectile_m = 2# Set the mass of the projectile to 2 kilograms
+        self.projectile_Cd = 0.52 # Set the drag coefficient of the projectile to 0.47
         self.projectile_colour = (255, 255, 255) # Set the colour of the projectile to white
         """
         Set up level variables
@@ -394,6 +400,9 @@ class Game: # A class to represent the game loop
         while self.running: # A loop to run the game while th boolean variable is True
 
             self.projectile.set_position(self.cannon.get_center()[0], self.cannon.get_center()[1]) # Set the position of the projectile to the position of the cannon
+            self.projectile.distance_traveled = 0 # Set the distance traveled to 0
+            self.projectile.distance_traveled_x = 0 # Set the distance traveled in the x-direction to 0
+            self.projectile.distance_traveled_y = 0 # Set the distance traveled in the y-direction to 0
             self.projectileImage.set_position(self.cannon.get_center()[0], self.cannon.get_center()[1]) # Set the position of the projectile image to the position of the cannon
             self.projectile.hit_target = False # A boolean variable to indicate if the projectile has hit the target
             self.game_over = False # A boolean variable to indicate if the game is over
@@ -470,6 +479,8 @@ class Game: # A class to represent the game loop
                 self.screen.blit(text, (10, 10)) # Draw the text on the screen
                 text = font.render(f"Drag Coefficient: " + str(self.projectile_Cd) + ", Mass: " + str(self.projectile_m) + "Kg, Air Resistance: " + str(self.B2), True, (255, 255, 255)) # Write the drag coefficient, mass, and air resistance of the projectile on the screen. Text is white
                 self.screen.blit(text, (10, 30)) # Draw the text on the screen
+                text = font.render(f"Distance: {round(self.projectile.distance_traveled_x, 4)}m", True, (255, 255, 255)) # Write the wind angle on the screen and round the value to 4 decimal places. Text is white
+                self.screen.blit(text, (10, 50)) # Draw the text on the screen
 
                 pygame.display.flip() # Update the screen
 

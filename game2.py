@@ -420,7 +420,6 @@ class Game: # A class to represent the game loop
                 mouse_x, mouse_y = pygame.mouse.get_pos() # Get the position of the mouse in pixels inside the window
                 angle_projectile = (math.atan2(mouse_y - self.projectile.y, mouse_x -  self.projectile.x)) # Calculate the angle between the projectile and the mouse
                 angle_cannon = (math.atan2(mouse_y - self.projectile.y, mouse_x -  self.projectile.x)) # Calculate the angle between the cannon and the mouse
-                
 
                 if not self.in_flight: # If the projectile is not in flight
                     self.cannon.rot_center(math.degrees(-angle_cannon)-20)

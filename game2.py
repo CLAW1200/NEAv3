@@ -167,6 +167,7 @@ class Obstacle(Goal):
         self.colour = (255, 100, 100) # Set the colour of the obstacle to a light red (pre defined colour and not a parameter)
         self.bounceAbsorption = 0.7 # Set the absorption multiplier of the obstacle
     def get_coordinates(self):
+        
         """
         A method to return the coordinates of the obstacle.
         """

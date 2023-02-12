@@ -167,7 +167,7 @@ class Obstacle(Goal):
         self.colour = (255, 100, 100) # Set the colour of the obstacle to a light red (pre defined colour and not a parameter)
         self.bounceAbsorption = 0.7 # Set the absorption multiplier of the obstacle
     def get_coordinates(self):
-        
+
         """
         A method to return the coordinates of the obstacle.
         """
@@ -499,7 +499,7 @@ class Game: # A class to represent the game loop
                 self.screen.blit(text, (10, 50)) # Draw the text on the screen
 
                 pygame.display.flip() # Update the screen
-                self.projectile.dt = self.clock.tick(60) / 1200 # Set the time step to the time since the last frame in seconds
+                self.projectile.dt = self.clock.tick(60) / 120 # Set the time step to the time since the last frame in seconds (1200 for real time)
 
         pygame.quit() # Quit the game
 

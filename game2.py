@@ -94,11 +94,9 @@ class Projectile: # Projectile class
         self.distance_traveled_x = self.distance_traveled_x + math.sqrt((self.xs[-1] - self.xs[-2])**2) # Update the distance traveled by the projectile in the x-direction
         self.distance_traveled_y = self.distance_traveled_y + math.sqrt((self.ys[-1] - self.ys[-2])**2) # Update the distance traveled by the projectile in the y-direction
 
-
-
     def set_vx_vy(self, vx, vy):
         """
-        A method to set the velocity of the projectile.
+        A method to set the velocity of the projectile while ensuring that the velocity does not exceed the maximum velocity.
         """
         if vx > self.max_vel:
             self.vx = self.max_vel
@@ -164,7 +162,7 @@ class Obstacle(Goal):
         """
         Initialize the obstacle with its position and size.
         """
-        self.collision_range = 5
+        self.collision_range = 50
         super().__init__(x, y, width, height) # Call the constructor of the Goal class
         self.colour = (255, 100, 100) # Set the colour of the obstacle to a light red (pre defined colour and not a parameter)
         self.bounceAbsorption = 0.7 # Set the absorption multiplier of the obstacle
@@ -174,33 +172,47 @@ class Obstacle(Goal):
         """
         return self.x, self.y, self.x + self.width, self.y + self.height # Return the coordinates of the obstacle as a tuple
 
-    def check_collision(self, projectile):
+    def check_collision(self, projectile, projectileImage):
         """
-        A method to check if the projectile has collided with the goal.
+        A method to check if the projectile has collided with the obstacle using Separating Axis Theorem.
         """
-        x, y = projectile.get_position()
-        x1, y1, x2, y2 = self.get_coordinates()
-        #if projectile is inside the obstacle move it to the surface of the obstacle
-        if x > x1 and x < x2 and y > y1 and y < y2:
-            vx, vy = projectile.get_velocity()
-            if x < x1 + self.collision_range:
-                x = x1
-                vx = -vx * self.bounceAbsorption
-            elif x > x2 - self.collision_range:
-                x = x2
-                vx = -vx * self.bounceAbsorption
-            elif y < y1 + self.collision_range:
-                y = y1
-                vy = -vy * self.bounceAbsorption
-            elif y > y2 - self.collision_range:
-                y = y2
-                vy = -vy * self.bounceAbsorption
-            projectile.set_vx_vy(vx, vy)
-            projectile.x = x
-            projectile.y = y
-            return True
-        else:
+        p_x, p_y = projectile.get_position()
+        p_width, p_height = projectileImage.get_size()
+        o_x1, o_y1, o_x2, o_y2 = self.get_coordinates()
+        o_x = (o_x1 + o_x2) / 2
+        o_y = (o_y1 + o_y2) / 2
+        o_width = o_x2 - o_x1
+        o_height = o_y2 - o_y1
+        
+        # Calculate the overlapping distance along the X and Y axes
+        overlap_x = (p_width + o_width) / 2 - abs(p_x - o_x)
+        overlap_y = (p_height + o_height) / 2 - abs(p_y - o_y)
+
+        # If there is no overlap along either axis, then there is no collision
+        if overlap_x <= 0 or overlap_y <= 0:
             return False
+
+        # Determine which axis has the smallest overlap and resolve the collision along that axis
+        if overlap_x < overlap_y:
+            if p_x < o_x:
+                p_x = o_x1 - p_width / 2
+            else:
+                p_x = o_x2 + p_width / 2
+            vx, vy = projectile.get_velocity()
+            vx = -vx * self.bounceAbsorption
+        else:
+            if p_y < o_y:
+                p_y = o_y1 - p_height / 2
+            else:
+                p_y = o_y2 + p_height / 2
+            vx, vy = projectile.get_velocity()
+            vy = -vy * self.bounceAbsorption
+
+        # Update the position and velocity of the projectile after the collision
+        projectile.set_vx_vy(vx, vy)
+        projectile.set_position(p_x, p_y)
+        return True
+
 
 class Cannon:
     def __init__(self, x, y):
@@ -216,7 +228,6 @@ class Cannon:
         self.rot_cannon_image = pygame.transform.scale(self.rot_cannon_image, (self.rot_cannon_image.get_width() * self.scale, self.rot_cannon_image.get_height() * self.scale))
         self.power = 0 # Create a variable to store the power of the cannon
         
-
     def get_center(self):
         """
         A method to return the center of the cannon.
@@ -256,6 +267,8 @@ class ProjectileImage:
         self.x = x
         self.y = y
         self.size = size
+        self.width = size
+        self.height = size
         self.projectile_colour = (255, 255, 255)
 
     def draw(self, screen, x, y):
@@ -273,6 +286,12 @@ class ProjectileImage:
         A method to set the colour of the projectile image.
         """
         self.projectile_colour = colour
+
+    def get_size(self):
+        """
+        A method to get the size of the projectile image.
+        """
+        return self.width, self.height
 
 class WindArrow:
     def __init__(self, x, y):
@@ -317,17 +336,15 @@ class Game: # A class to represent the game loop
         Set up the game window variables and initialize pygame
         """
         pygame.init() # Initialize pygame
-        pygame.time.Clock() # Set frame rate to 60 fps
+        self.clock = pygame.time.Clock() # Set frame rate
         self.SCREEN_WIDTH = 1000 # Set the width of the screen
         self.SCREEN_HEIGHT = 600 # Set the height of the screen
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT)) # Create a screen with the specified width and height
         """
         Set up environment variables
         """
-        self.bg_colour = (30, 30, 30) # Set the background colour of the screen to a dark red (pre defined colour and not a parameter)
+        self.bg_colour = (30, 30, 30) # Set the background colour of the screen (pre defined colour and not a parameter)
         self.B2 = 0.00004 # Set the drag coefficient of the projectile (pre defined value and not a parameter)
-       
-
         """
         Set up target variables
         """
@@ -342,8 +359,8 @@ class Game: # A class to represent the game loop
         self.projectile_y = 0 # Set the initial y-position of the projectile to the y-position of the cannon
         self.projectile_vx = 0 # Set the initial x-velocity of the projectile to the x-velocity of the cannon
         self.projectile_vy = 0 # Set the initial y-velocity of the projectile to the y-velocity of the cannon
-        self.projectile_m = 2# Set the mass of the projectile to 2 kilograms
-        self.projectile_Cd = 0.52 # Set the drag coefficient of the projectile to 0.47
+        self.projectile_m = 2 # Set the mass of the projectile
+        self.projectile_Cd = 0.52 # Set the drag coefficient of the projectile
         self.projectile_colour = (255, 255, 255) # Set the colour of the projectile to white
         """
         Set up level variables
@@ -369,7 +386,6 @@ class Game: # A class to represent the game loop
         self.obstacleList.append(Obstacle(0, self.SCREEN_HEIGHT-5, self.SCREEN_WIDTH, 50)) # Create a floor object with the specified position and size
         self.obstacleList.append(Obstacle(0, -45, self.SCREEN_WIDTH, 50)) # Create a ceiling object with the specified position and size
         self.obstacleList.append(Obstacle(self.SCREEN_WIDTH-5, 0, 50, self.SCREEN_HEIGHT)) # Create a right wall object with the specified position and size
-
 
         for i in range(self.levelCounter): # Loop through the number of obstacles for the current level
             self.obstacleList.append(Obstacle(random.randint(0,self.SCREEN_WIDTH), random.randint(0,self.SCREEN_HEIGHT), random.randint(20,100), random.randint(20,100))) # Add an obstacle to the list of obstacles
@@ -440,7 +456,7 @@ class Game: # A class to represent the game loop
                     self.levelManager(self.projectile.hit_target) # Call the function to manage the levels
                 for i in range(len(self.obstacleList)): # Run through the list of obstacles
                     #check collision with projectile or target
-                    if self.obstacleList[i].check_collision(self.projectile) and not self.in_flight : # Call the method to check if the projectile or target has hit the obstacle
+                    if self.obstacleList[i].check_collision(self.projectile, self.projectileImage) and not self.in_flight : # Call the method to check if the projectile or target has hit the obstacle
                         self.obstacleManager() # Call the function to manage the obstacles
 
                 if self.projectile.x < 0 or self.projectile.x > self.SCREEN_WIDTH or self.projectile.y > self.SCREEN_HEIGHT or self.projectile.x < 0:
@@ -482,6 +498,7 @@ class Game: # A class to represent the game loop
                 self.screen.blit(text, (10, 50)) # Draw the text on the screen
 
                 pygame.display.flip() # Update the screen
+                self.projectile.dt = self.clock.tick(60) / 1200 # Set the time step to the time since the last frame in seconds
 
         pygame.quit() # Quit the game
 

@@ -153,7 +153,6 @@ class Goal:
         else:
             return False # Return False if the projectile has not collided with the goal
 
-
 class Obstacle(Goal):
     """
     A class to represent an obstacle that inherits from the Goal class.
@@ -166,6 +165,7 @@ class Obstacle(Goal):
         super().__init__(x, y, width, height) # Call the constructor of the Goal class
         self.colour = (255, 100, 100) # Set the colour of the obstacle to a light red (pre defined colour and not a parameter)
         self.bounceAbsorption = 0.7 # Set the absorption multiplier of the obstacle
+        self.friction = 0.05 # Set the friction multiplier of the obstacle
     def get_coordinates(self):
 
         """
@@ -201,6 +201,7 @@ class Obstacle(Goal):
                 p_x = o_x2 + p_width / 2
             vx, vy = projectile.get_velocity()
             vx = -vx * self.bounceAbsorption
+            vy = vy * (1 - self.friction)
         else:
             if p_y < o_y:
                 p_y = o_y1 - p_height / 2
@@ -208,7 +209,26 @@ class Obstacle(Goal):
                 p_y = o_y2 + p_height / 2
             vx, vy = projectile.get_velocity()
             vy = -vy * self.bounceAbsorption
-
+            vx = vx * (1 - self.friction)
+       
+        #play ball sound with random volume
+        ballSound = pygame.mixer.Sound(f"assets\\ball{random.randint(1,6)}.mp3")
+        vol = (projectile.get_velocity()[0]**2 + projectile.get_velocity()[1]**2)**0.5/100 - 0.05
+        if vol < 0:
+            vol = 0
+        ballSound.set_volume((vol))
+        game.BallChannelCounter += 1
+        if game.BallChannelCounter > 40:
+            game.BallChannelCounter = 5
+        channel = pygame.mixer.Channel(game.BallChannelCounter)
+        if vol != 0:
+            try:
+                if channel.get_busy():
+                    self.i += 1
+                else:
+                    channel.play(ballSound)
+            except:
+                pass
         # Update the position and velocity of the projectile after the collision
         projectile.set_vx_vy(vx, vy)
         projectile.set_position(p_x, p_y)
@@ -341,6 +361,7 @@ class Game: # A class to represent the game loop
         self.SCREEN_WIDTH = 1000 # Set the width of the screen
         self.SCREEN_HEIGHT = 600 # Set the height of the screen
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT)) # Create a screen with the specified width and height
+        self.BallChannelCounter = 5 # Set the channel counter to 0
         """
         Set up environment variables
         """
@@ -372,6 +393,7 @@ class Game: # A class to represent the game loop
         self.game_over = False # A boolean variable to indicate if the game is over
         self.launched = False # A boolean variable to indicate if the projectile has been launched
         self.in_flight = False # A boolean variable to indicate if the projectile is in flight
+        self.background = pygame.image.load("assets\\background.png") # Load the background image
         """
         Create a cannon object
         """
@@ -397,7 +419,7 @@ class Game: # A class to represent the game loop
             self.target = Goal(self.target_x, random.randint(50, self.SCREEN_HEIGHT-50), self.target_width, self.target_height) # Create a target object with the specified position and size
             self.obstacleManager() # Call the function to manage the obstacles
             self.projectile.set_wind((random.random() * self.levelCounter/2), random.randint(0,360))
-            self.projectileImage.set_colour((random.randint(200,255), random.randint(200,255), random.randint(200,255))) # Set the colour of the projectile to a random colour
+            self.projectileImage.set_colour((random.randint(160,255), random.randint(160,255), random.randint(160,255))) # Set the colour of the projectile to a random colour
             self.game_over = True # Set the boolean variable to True to indicate that the game is over
         else:
             self.game_over = True # Set the boolean variable to True to indicate that the game is over
@@ -413,9 +435,17 @@ class Game: # A class to represent the game loop
         self.projectileImage = ProjectileImage(self.cannon.get_center()[0], self.cannon.get_center()[1], 5) # Create a projectile image object with the specified position and size
         self.windArrow = WindArrow(30, 70)
         self.obstacleManager()
+        pygame.mixer.set_num_channels(41)
+
+        #play amb1 sound on loop on channel 4
+        sound = pygame.mixer.Sound("assets\\amb1.mp3")
+        channel = pygame.mixer.Channel(4)
+        channel.play(sound, -1)
+        pygame.mixer.music.load("assets\\wind.mp3")
+        pygame.mixer.music.play(-1)
 
         while self.running: # A loop to run the game while th boolean variable is True
-
+            pygame.mixer.music.set_volume(self.projectile.wind_speed/10)
             self.projectile.set_position(self.cannon.get_center()[0], self.cannon.get_center()[1]) # Set the position of the projectile to the position of the cannon
             self.projectile.distance_traveled = 0 # Set the distance traveled to 0
             self.projectile.distance_traveled_x = 0 # Set the distance traveled in the x-direction to 0
@@ -425,7 +455,7 @@ class Game: # A class to represent the game loop
             self.game_over = False # A boolean variable to indicate if the game is over
             self.launched = False # A boolean variable to indicate if the projectile has been launched
             self.in_flight = False # A boolean variable to indicate if the projectile is in flight
-            self.projectile.trajectory.clear() # Clear the trajectory list
+            self.projectile.trajectory.clear() # Clear the trajectory list            
 
             while not self.game_over: # A loop to run the game while the boolean variable is False
 
@@ -455,12 +485,14 @@ class Game: # A class to represent the game loop
                 if self.target.check_collision(self.projectile): # Call the method to check if the projectile has hit the target
                     self.projectile.hit_target = True # Set the boolean variable to True to indicate that the projectile has hit the target
                     self.levelManager(self.projectile.hit_target) # Call the function to manage the levels
+                    pygame.mixer.Channel(0).play(pygame.mixer.Sound('assets\\dingup.mp3'))
                 for i in range(len(self.obstacleList)): # Run through the list of obstacles
                     #check collision with projectile or target
                     if self.obstacleList[i].check_collision(self.projectile, self.projectileImage) and not self.in_flight : # Call the method to check if the projectile or target has hit the obstacle
                         self.obstacleManager() # Call the function to manage the obstacles
 
                 if self.projectile.x < 0 or self.projectile.x > self.SCREEN_WIDTH or self.projectile.y > self.SCREEN_HEIGHT or self.projectile.x < 0:
+                    pygame.mixer.Channel(0).play(pygame.mixer.Sound('assets\\error.mp3'))
                     break
 
                 """EVENT HANDLING"""
@@ -478,6 +510,8 @@ class Game: # A class to represent the game loop
                                 
                 """DRAW THE GAME STATE"""
                 self.screen.fill(self.bg_colour) # Fill the screen with the background colour
+                #draw background image
+                self.screen.blit(self.background, (0,0))
                 if self.in_flight:
                     self.projectileImage.draw(self.screen, self.projectile.x, self.projectile.y) # Draw the projectile on the screen
                 self.cannon.draw(self.screen) # Draw the cannon on the screen
@@ -488,7 +522,7 @@ class Game: # A class to represent the game loop
                 self.windArrow.draw_rotate(self.projectile.wind_angle, self.screen) # Draw the wind arrow on the screen
 
                 if len(self.projectile.trajectory) > 1: # If the projectile has a trajectory
-                    pygame.draw.lines(self.screen, self.projectileImage.projectile_colour, False, self.projectile.trajectory, 1) # Draw the trajectory of the projectile on the screen
+                    pygame.draw.lines(self.screen, self.projectileImage.projectile_colour, False, self.projectile.trajectory[-1000:], 1) # Draw the trajectory of the projectile on the screen
 
                 font = pygame.font.SysFont("consolas", 20) # Set the font and size of the text that will be displayed on the screen
                 text = font.render(f"Cannon Velocity: {round(self.projectile.vx, 2)}, {round(self.projectile.vy, 2)} Wind Speed: {round(self.projectile.wind_speed,4)}m/s", True, (255, 255, 255)) # Write the x-velocity and y-velocity of the cannon on the screen and round the values to 2 decimal places. Text is white

@@ -222,6 +222,7 @@ class Obstacle(Goal):
             game.BallChannelCounter = 5
         channel = pygame.mixer.Channel(game.BallChannelCounter)
         if vol != 0:
+            game.bounceCounter += 1
             try:
                 if channel.get_busy():
                     self.i += 1
@@ -384,6 +385,7 @@ class Game: # A class to represent the game loop
         self.projectile_m = 2 # Set the mass of the projectile
         self.projectile_Cd = 0.52 # Set the drag coefficient of the projectile
         self.projectile_colour = (255, 255, 255) # Set the colour of the projectile to white
+        self.bounceCounter = 0 # Set the bounce counter to 0
         """
         Set up level variables
         """
@@ -415,11 +417,11 @@ class Game: # A class to represent the game loop
 
     def levelManager(self, state):
         if state == True:
-            self.levelCounter += 3 # Increase the level counter by 1
+            self.levelCounter += 2 # Increase the level counter 
             self.target = Goal(self.target_x, random.randint(50, self.SCREEN_HEIGHT-50), self.target_width, self.target_height) # Create a target object with the specified position and size
             self.obstacleManager() # Call the function to manage the obstacles
-            self.projectile.set_wind((random.random() * self.levelCounter/2), random.randint(0,360))
-            self.projectileImage.set_colour((random.randint(160,255), random.randint(160,255), random.randint(160,255))) # Set the colour of the projectile to a random colour
+            self.projectile.set_wind((random.random() * self.levelCounter/4), random.randint(0,360))
+            self.projectileImage.set_colour((random.randint(100,255), random.randint(100,255), random.randint(100,255))) # Set the colour of the projectile to a random colour
             self.game_over = True # Set the boolean variable to True to indicate that the game is over
         else:
             self.game_over = True # Set the boolean variable to True to indicate that the game is over
@@ -456,6 +458,7 @@ class Game: # A class to represent the game loop
             self.launched = False # A boolean variable to indicate if the projectile has been launched
             self.in_flight = False # A boolean variable to indicate if the projectile is in flight
             self.projectile.trajectory.clear() # Clear the trajectory list            
+            self.bounceCounter = 0 # Set the bounce counter to 0
 
             while not self.game_over: # A loop to run the game while the boolean variable is False
 
@@ -501,6 +504,10 @@ class Game: # A class to represent the game loop
                         self.running = False # Set the boolean variable to False to indicate that the game is over
                         self.game_over = True # Set the boolean variable to True to indicate that the game is over
                         break
+                    if event.type == pygame.KEYDOWN: # If the user presses a key
+                        if event.key == pygame.K_l:
+                            self.game_over = True
+                            self.levelManager(True)
                     elif event.type == pygame.MOUSEBUTTONDOWN: # If the user clicks the mouse
                         if event.button == 1: # If the user clicks the left mouse button
                             if not self.launched and not self.in_flight: # If the projectile has not been launched and is not in flight
@@ -529,7 +536,7 @@ class Game: # A class to represent the game loop
                 self.screen.blit(text, (10, 10)) # Draw the text on the screen
                 text = font.render(f"Drag Coefficient: " + str(self.projectile_Cd) + ", Mass: " + str(self.projectile_m) + "Kg, Air Resistance: " + str(self.B2), True, (255, 255, 255)) # Write the drag coefficient, mass, and air resistance of the projectile on the screen. Text is white
                 self.screen.blit(text, (10, 30)) # Draw the text on the screen
-                text = font.render(f"Distance: {round(self.projectile.distance_traveled_x, 4)}m", True, (255, 255, 255)) # Write the wind angle on the screen and round the value to 4 decimal places. Text is white
+                text = font.render(f"Bounces: {self.bounceCounter}", True, (255, 255, 255)) # Write the wind angle on the screen and round the value to 4 decimal places. Text is white
                 self.screen.blit(text, (10, 50)) # Draw the text on the screen
 
                 pygame.display.flip() # Update the screen

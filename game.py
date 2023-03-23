@@ -2,7 +2,6 @@ import math # Import the math module
 import pygame # Import the pygame module
 import random # Import the random module
 
-
 class Projectile: # Projectile class
     """
     A class to simulate the flight of a projectile.
@@ -30,12 +29,11 @@ class Projectile: # Projectile class
         self.distance_traveled_x = 0 # The distance traveled by the projectile in the x-direction
         self.distance_traveled_y = 0 # The distance traveled by the projectile in the y-direction
 
-
         # Initialize the list of points in the projectile's trajectory
         self.trajectory = [] # A list of points that follow the projectile path
 
         # Set the time step
-        self.dt = 0.05 # Time step is how often the position of the projectile is updated in the simulation (not the same as the frame rate)
+        self.dt = 0.1 # Time step is how often the position of the projectile is updated in the simulation (not the same as the frame rate)
 
         # Initialize the air resistance force using the drag formula
         self.Fx = -0.5 * Cd * B2 * vx0 * math.sqrt(vx0**2 + vy0**2) # The x-component of the air resistance force
@@ -329,7 +327,7 @@ class WindArrow:
         #draw a triangle
         pygame.draw.polygon(screen, self.colour, ((self.x, self.y), (self.x + 40, self.y + 10), (self.x + 40, self.y - 10)))
 
-    def set_position(self, x, y):
+    def set_position(self, x, y): 
         """
         A method to set the position of the wind arrow.
         """

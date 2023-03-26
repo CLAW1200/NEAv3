@@ -7,68 +7,33 @@ def create_table():
     con.commit()
     con.close()
 
-"""A function to add a new user to the database"""
-def add_user(username, highScore):
-    con = sqlite3.connect("main.db")
-    cur = con.cursor()
+def insert(username, highScore):
     cur.execute("INSERT INTO users VALUES (NULL, ?, ?)", (username, highScore))
-    con.commit()
+    con.commit()                          
     con.close()
 
-"""A function to get all the users from the database"""
-def get_users():
-    con = sqlite3.connect("main.db")
-    cur = con.cursor()
+def view():
     cur.execute("SELECT * FROM users")
-    users = cur.fetchall()
-    con.close()
-    return users
+    rows = cur.fetchall()
+    con.close()                                                                                      
+    return rows                                                
 
-"""A function to get a user from the database"""
-def get_user(username):
-    con = sqlite3.connect("main.db")
-    cur = con.cursor()
-    cur.execute("SELECT * FROM users WHERE username = ?", (username,))
-    user = cur.fetchone()
-    con.close()
-    return user
-    
-
-"""A function to update a user's high score"""
-def update_high_score(username, highScore):
-    con = sqlite3.connect("main.db")
-    cur = con.cursor()
-    cur.execute("UPDATE users SET highScore = ? WHERE username = ?", (highScore, username))
+def delete(id):
+    cur.execute("DELETE FROM users WHERE id=?", (id,))
     con.commit()
     con.close()
 
-"""A function to delete a user from the database"""
-def delete_user(username):
-    con = sqlite3.connect("main.db")
-    cur = con.cursor()
-    cur.execute("DELETE FROM users WHERE username = ?", (username,))
+def update(id, username, highScore):
+    cur.execute("UPDATE users SET username=?, highScore=? WHERE id=?", (username, highScore, id))
     con.commit()
     con.close()
 
-"""A function to delete all the users from the database"""
-def delete_all_users():
-    con = sqlite3.connect("main.db")
-    cur = con.cursor()
-    cur.execute("DELETE FROM users")
-    con.commit()
+def search(username="", highScore=""):
+    cur.execute("SELECT * FROM users WHERE username=? OR highScore=?", (username, highScore))
+    rows = cur.fetchall()
     con.close()
+    return rows
 
-
-if __name__ == "__main__":
-    create_table()
-    add_user("test", 0)
-    add_user("test2", 0)
-    add_user("test3", 0)
-    print(get_users())
-    print(get_user("test"))
-    update_high_score("test", 100)
-    print(get_user("test"))
-    delete_user("test")
-    print(get_users())
-    delete_all_users()
-    print(get_users())
+create_table()
+insert("John", 100)
+print(view())

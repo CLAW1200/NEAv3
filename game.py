@@ -12,7 +12,7 @@ class Projectile: # Projectile class
         coefficient, and the constant for air resistance.
         """
         self.x = x0 # Initial x-position
-        self.y = y0 # Initial y-positi  on
+        self.y = y0 # Initial y-position
         self.vx = vx0 # Initial x-velocity
         self.vy = vy0 # Initial y-velocity
         self.m = mass # Mass of the projectile
@@ -51,10 +51,10 @@ class Projectile: # Projectile class
         """
         A method to set the wind speed and direction.
         """
-        self.wind_speed = wind_speed # Set the wind speed to the value of the parameter wind_speed
-        self.wind_angle = wind_angle # Set the wind direction to the value of the parameter wind_angle
-        self.wind_x = self.wind_speed * math.cos(math.radians(self.wind_angle)) # Calculate the x-component of the wind speed
-        self.wind_y = self.wind_speed * math.sin(math.radians(self.wind_angle)) # Calculate the y-component of the wind speed
+        self.wind_speed = wind_speed
+        self.wind_angle = wind_angle
+        self.wind_x = self.wind_speed * math.cos(math.radians(self.wind_angle))
+        self.wind_y = self.wind_speed * math.sin(math.radians(self.wind_angle))
     
     def set_position(self, x, y):
         """
@@ -96,18 +96,18 @@ class Projectile: # Projectile class
         """
         A method to set the velocity of the projectile while ensuring that the velocity does not exceed the maximum velocity.
         """
-        if vx > self.max_vel: # If the x-velocity is greater than the maximum velocity
-            self.vx = self.max_vel # Set the x-velocity to the maximum velocity
-        elif vx < -self.max_vel: # If the x-velocity is less than the minimum velocity
-            self.vx = -self.max_vel # Set the x-velocity to the minimum velocity
-        else: # If the x-velocity is between the minimum and maximum velocities
-            self.vx = vx # Set the x-velocity to the value of the parameter vx
-        if vy > self.max_vel: # If the y-velocity is greater than the maximum velocity
-            self.vy = self.max_vel # Set the y-velocity to the maximum velocity
-        elif vy < -self.max_vel: # If the y-velocity is less than the minimum velocity
-            self.vy = -self.max_vel # Set the y-velocity to the minimum velocity
-        else: # If the y-velocity is between the minimum and maximum velocities
-            self.vy = vy # Set the y-velocity to the value of the parameter vy
+        if vx > self.max_vel:
+            self.vx = self.max_vel
+        elif vx < -self.max_vel:
+            self.vx = -self.max_vel
+        else:
+            self.vx = vx
+        if vy > self.max_vel:
+            self.vy = self.max_vel
+        elif vy < -self.max_vel:
+            self.vy = -self.max_vel
+        else:
+            self.vy = vy
 
     def get_position(self):
         """
@@ -159,6 +159,7 @@ class Obstacle(Goal):
         """
         Initialize the obstacle with its position and size.
         """
+        self.collision_range = 50
         super().__init__(x, y, width, height) # Call the constructor of the Goal class
         self.colour = (255, 100, 100) # Set the colour of the obstacle to a light red (pre defined colour and not a parameter)
         self.bounceAbsorption = 0.7 # Set the absorption multiplier of the obstacle
@@ -174,13 +175,13 @@ class Obstacle(Goal):
         """
         A method to check if the projectile has collided with the obstacle using Separating Axis Theorem.
         """
-        p_x, p_y = projectile.get_position() # Get the position of the projectile
-        p_width, p_height = projectileImage.get_size() # Get the size of the projectile 
-        o_x1, o_y1, o_x2, o_y2 = self.get_coordinates() # Get the coordinates of the obstacle
-        o_x = (o_x1 + o_x2) / 2 # Calculate the x-position of the obstacle
-        o_y = (o_y1 + o_y2) / 2 # Calculate the y-position of the obstacle
-        o_width = o_x2 - o_x1 # Calculate the width of the obstacle
-        o_height = o_y2 - o_y1 # Calculate the height of the obstacle
+        p_x, p_y = projectile.get_position()
+        p_width, p_height = projectileImage.get_size()
+        o_x1, o_y1, o_x2, o_y2 = self.get_coordinates()
+        o_x = (o_x1 + o_x2) / 2
+        o_y = (o_y1 + o_y2) / 2
+        o_width = o_x2 - o_x1
+        o_height = o_y2 - o_y1
         
         # Calculate the overlapping distance along the X and Y axes
         overlap_x = (p_width + o_width) / 2 - abs(p_x - o_x)
@@ -276,6 +277,7 @@ class Cannon:
         A method to rotate the cannon image to the angle.
         """
         self.rot_cannon_image = pygame.transform.rotate(self.cannon_image, angle)
+
 
 class ProjectileImage:
     def __init__(self, x, y, size):
@@ -392,11 +394,6 @@ class Game: # A class to represent the game loop
         self.launched = False # A boolean variable to indicate if the projectile has been launched
         self.in_flight = False # A boolean variable to indicate if the projectile is in flight
         self.background = pygame.image.load("assets\\background.png") # Load the background image
-
-        """
-        Create file to store projectile and level vars
-        """
-        ##DO SHIT HERE
         """
         Create a cannon object
         """

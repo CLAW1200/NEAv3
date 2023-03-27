@@ -12,7 +12,7 @@ class Projectile: # Projectile class
         coefficient, and the constant for air resistance.
         """
         self.x = x0 # Initial x-position
-        self.y = y0 # Initial y-position
+        self.y = y0 # Initial y-positi  on
         self.vx = vx0 # Initial x-velocity
         self.vy = vy0 # Initial y-velocity
         self.m = mass # Mass of the projectile
@@ -159,7 +159,6 @@ class Obstacle(Goal):
         """
         Initialize the obstacle with its position and size.
         """
-        self.collision_range = 50
         super().__init__(x, y, width, height) # Call the constructor of the Goal class
         self.colour = (255, 100, 100) # Set the colour of the obstacle to a light red (pre defined colour and not a parameter)
         self.bounceAbsorption = 0.7 # Set the absorption multiplier of the obstacle
@@ -278,7 +277,6 @@ class Cannon:
         """
         self.rot_cannon_image = pygame.transform.rotate(self.cannon_image, angle)
 
-
 class ProjectileImage:
     def __init__(self, x, y, size):
         """
@@ -394,6 +392,11 @@ class Game: # A class to represent the game loop
         self.launched = False # A boolean variable to indicate if the projectile has been launched
         self.in_flight = False # A boolean variable to indicate if the projectile is in flight
         self.background = pygame.image.load("assets\\background.png") # Load the background image
+
+        """
+        Create file to store projectile and level vars
+        """
+        ##DO SHIT HERE
         """
         Create a cannon object
         """

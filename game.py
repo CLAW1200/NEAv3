@@ -414,6 +414,9 @@ class Game: # A class to represent the game loop
             self.obstacleList.append(Obstacle(random.randint(0,self.SCREEN_WIDTH), random.randint(0,self.SCREEN_HEIGHT), random.randint(20,100), random.randint(20,100))) # Add an obstacle to the list of obstacles
 
     def levelManager(self, state):
+        """
+        A function to progress the level when the target is hit
+        """
         if state == True:
             self.levelCounter += 2 # Increase the level counter 
             self.target = Goal(self.target_x, random.randint(50, self.SCREEN_HEIGHT-50), self.target_width, self.target_height) # Create a target object with the specified position and size
@@ -516,7 +519,7 @@ class Game: # A class to represent the game loop
                 """DRAW THE GAME STATE"""
                 self.screen.fill(self.bg_colour) # Fill the screen with the background colour
                 #draw background image
-                self.screen.blit(self.background, (0,0))
+                #self.screen.blit(self.background, (0,0))
                 if self.in_flight:
                     self.projectileImage.draw(self.screen, self.projectile.x, self.projectile.y) # Draw the projectile on the screen
                 self.cannon.draw(self.screen) # Draw the cannon on the screen

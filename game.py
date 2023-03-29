@@ -1,6 +1,9 @@
 import math # Import the math module
 import pygame # Import the pygame module
 import random # Import the random module
+import os # Import the os module
+import json # Import the json module
+import datetime # Import the datetime module
 
 class Projectile: # Projectile class
     """
@@ -214,18 +217,18 @@ class Obstacle(Goal):
         vol = (projectile.get_velocity()[0]**2 + projectile.get_velocity()[1]**2)**0.5/100 - 0.05
         if vol < 0:
             vol = 0
-        ballSound.set_volume((vol))
-        game.BallChannelCounter += 1
-        if game.BallChannelCounter > 40:
+        ballSound.set_volume((vol)) #set volume of sound
+        game.BallChannelCounter += 1 #play sound on different channel each time to avoid sound overlapping
+        if game.BallChannelCounter > 40: # reset channel counter to 5 to avoid channel overflow
             game.BallChannelCounter = 5
-        channel = pygame.mixer.Channel(game.BallChannelCounter)
+        channel = pygame.mixer.Channel(game.BallChannelCounter) #set channel
         if vol != 0:
-            game.bounceCounter += 1
+            game.bounceCounter += 1 #count number of bounces
             try:
-                if channel.get_busy():
+                if channel.get_busy(): #if channel is busy
                     self.i += 1
                 else:
-                    channel.play(ballSound)
+                    channel.play(ballSound) #play sound
             except:
                 pass
         # Update the position and velocity of the projectile after the collision
@@ -349,23 +352,128 @@ class WindArrow:
             rotated_points.append((x, y))
         pygame.draw.polygon(screen, self.colour, rotated_points)
 
-
 class Game: # A class to represent the game loop
+    def log(self, message):
+        """
+        A method to log a message to the console.
+        """
+        timeCode = datetime.datetime.now().strftime("%H:%M:%S")
+        with open("game.log", "a") as file:
+            file.write(f"[{timeCode}] {message} \n")
+            print (message)
+
+    def initTextFile(self):
+        """
+        Initialize the text file manager with the file name.
+        """
+        try:
+            self.file_name = "gamedata.json"
+            #if the file does not exist, create it
+            if not os.path.exists(self.file_name):
+                self.create_file()
+            #if the file is empty, create the default values
+            if os.stat(self.file_name).st_size == 0:
+                self.create_default_values()
+        except Exception as e:
+            self.log(e)
+            self.log("Error: Could not initialize text file.")
+
+    def create_file(self):
+        """
+        Create the text file.
+        """
+        try:
+            with open(self.file_name, "w") as file:
+                file.write("")
+        except Exception as e:
+            self.log(e)
+            self.log("Error: Could not create file.")
+
+    def create_default_values(self):
+        """
+        Create the default values in the text file.
+        """
+        try:
+            with open(self.file_name, "w") as file:
+                file.write(json.dumps({
+                    "levelCounter": 0,
+                    "B2": 0.00004,
+                    "bg_colour": (30, 30, 30),
+                    "projectile_colour": (255, 255, 255),
+                    "projectile_Cd": 0.52,
+                    "projectile_m": 2,
+                    "win_width": 1000,
+                    "win_height": 800,
+                    "wind_speed": 0,
+                    "wind_angle": 0,
+                }))
+        except Exception as e:
+            self.log(e)
+            self.log("Error: Could not create default values.")
+
+    def read_file(self, key):
+        """
+        Read the value of a key from the text file.
+        """
+        try:
+            with open(self.file_name, "r") as file:
+                data = json.load(file)
+                return data[key]
+        except Exception as e:
+            self.log(e)
+            self.log("Error: Could not read from file.")
+    
+    def write_file(self, key, value):
+        """
+        Write a value to a key in the text file.
+        """
+        try:
+            with open(self.file_name, "r") as file:
+                data = json.load(file)
+                data[key] = value
+            with open(self.file_name, "w") as file:
+                file.write(json.dumps(data))
+        except Exception as e:
+            self.log(e)
+            self.log("Error: Could not write to file.")
+
+    def saveState(self):
+        """
+        Save the state of the game.
+        """
+        try:
+            self.write_file("levelCounter", self.levelCounter)
+            self.write_file("B2", self.B2)
+            self.write_file("bg_colour", self.bg_colour)
+            self.write_file("projectile_colour", self.projectile_colour)
+            self.write_file("projectile_Cd", self.projectile_Cd)
+            self.write_file("projectile_m", self.projectile_m)
+            self.write_file("wind_speed", self.wind_speed)
+            self.write_file("wind_angle", self.wind_angle)
+        except Exception as e:
+            self.log(e)
+            self.log("Error: Could not save game state.")
+        
+
     def __init__(self):
+        """
+        Initialize the json file manager
+        """
+        self.initTextFile()
         """
         Set up the game window variables and initialize pygame
         """
         pygame.init() # Initialize pygame
         self.clock = pygame.time.Clock() # Set frame rate
-        self.SCREEN_WIDTH = 1000 # Set the width of the screen
-        self.SCREEN_HEIGHT = 600 # Set the height of the screen
+        self.SCREEN_WIDTH = self.read_file("win_width")# Set the width of the screen
+        self.SCREEN_HEIGHT = self.read_file("win_height") # Set the height of the screen
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT)) # Create a screen with the specified width and height
-        self.BallChannelCounter = 5 # Set the channel counter to 0
+        self.BallChannelCounter = 5 # Set the channel counter to 5
         """
         Set up environment variables
         """
-        self.bg_colour = (30, 30, 30) # Set the background colour of the screen (pre defined colour and not a parameter)
-        self.B2 = 0.00004 # Set the drag coefficient of the projectile (pre defined value and not a parameter)
+        self.bg_colour = self.read_file("bg_colour") # Set the background colour of the environment
+        self.B2 = self.read_file("B2") # Set the B2 coefficient of the environment
         """
         Set up target variables
         """
@@ -380,14 +488,14 @@ class Game: # A class to represent the game loop
         self.projectile_y = 0 # Set the initial y-position of the projectile to the y-position of the cannon
         self.projectile_vx = 0 # Set the initial x-velocity of the projectile to the x-velocity of the cannon
         self.projectile_vy = 0 # Set the initial y-velocity of the projectile to the y-velocity of the cannon
-        self.projectile_m = 2 # Set the mass of the projectile
-        self.projectile_Cd = 0.52 # Set the drag coefficient of the projectile
-        self.projectile_colour = (255, 255, 255) # Set the colour of the projectile to white
+        self.projectile_m = self.read_file("projectile_m") # Set the mass of the projectile
+        self.projectile_Cd = self.read_file("projectile_Cd") # Set the drag coefficient of the projectile
+        self.projectile_colour = self.read_file("projectile_colour") # Set the colour of the projectile
         self.bounceCounter = 0 # Set the bounce counter to 0
         """
         Set up level variables
         """
-        self.levelCounter = 0 # Create a variable to store the current level
+        self.levelCounter = self.read_file("levelCounter") # Set the level counter
         self.obstacleList = [] # Create an empty list to store the obstacles
         self.running = True # A boolean variable to indicate if the game is running
         self.game_over = False # A boolean variable to indicate if the game is over
@@ -421,9 +529,12 @@ class Game: # A class to represent the game loop
             self.levelCounter += 2 # Increase the level counter 
             self.target = Goal(self.target_x, random.randint(50, self.SCREEN_HEIGHT-50), self.target_width, self.target_height) # Create a target object with the specified position and size
             self.obstacleManager() # Call the function to manage the obstacles
-            self.projectile.set_wind((random.random() * self.levelCounter/4), random.randint(0,360))
+            self.write_file("wind_speed", (random.random() * self.levelCounter/4)) # Write the wind to the json file")
+            self.write_file("wind_angle", (random.randint(0,360))) # Write the wind angle to the json file")
+            self.projectile.set_wind(self.read_file("wind_speed"), self.read_file("wind_angle")) # Set the wind of the projectile
             self.projectileImage.set_colour((random.randint(100,255), random.randint(100,255), random.randint(100,255))) # Set the colour of the projectile to a random colour
             self.game_over = True # Set the boolean variable to True to indicate that the game is over
+            self.saveState() # Call the function to save the game state
         else:
             self.game_over = True # Set the boolean variable to True to indicate that the game is over
 
@@ -438,6 +549,7 @@ class Game: # A class to represent the game loop
         self.projectileImage = ProjectileImage(self.cannon.get_center()[0], self.cannon.get_center()[1], 5) # Create a projectile image object with the specified position and size
         self.windArrow = WindArrow(30, 70)
         self.obstacleManager()
+        self.projectile.set_wind(self.read_file("wind_speed"), self.read_file("wind_angle")) # Set the wind of the projectile
         pygame.mixer.set_num_channels(41)
 
         #play amb1 sound on loop on channel 4
@@ -537,8 +649,8 @@ class Game: # A class to represent the game loop
                 self.screen.blit(text, (10, 10)) # Draw the text on the screen
                 text = font.render(f"Drag Coefficient: " + str(self.projectile_Cd) + ", Mass: " + str(self.projectile_m) + "Kg, Air Resistance: " + str(self.B2), True, (255, 255, 255)) # Write the drag coefficient, mass, and air resistance of the projectile on the screen. Text is white
                 self.screen.blit(text, (10, 30)) # Draw the text on the screen
-                text = font.render(f"Bounces: {self.bounceCounter}", True, (255, 255, 255)) # Write the wind angle on the screen and round the value to 4 decimal places. Text is white
-                self.screen.blit(text, (10, 50)) # Draw the text on the screen
+                #text = font.render(f"Bounces: {self.bounceCounter}", True, (255, 255, 255)) # Write the wind angle on the screen and round the value to 4 decimal places. Text is white
+                #self.screen.blit(text, (10, 50)) # Draw the text on the screen
 
                 pygame.display.flip() # Update the screen
 

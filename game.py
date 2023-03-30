@@ -36,7 +36,7 @@ class Projectile: # Projectile class
         self.trajectory = [] # A list of points that follow the projectile path
 
         # Set the time step
-        self.dt = 0.1 # Time step is how often the position of the projectile is updated in the simulation (not the same as the frame rate)
+        self.dt = 0.01 # Time step is how often the position of the projectile is updated in the simulation (not the same as the frame rate)
 
         # Initialize the air resistance force using the drag formula
         self.Fx = -0.5 * Cd * B2 * vx0 * math.sqrt(vx0**2 + vy0**2) # The x-component of the air resistance force
@@ -235,7 +235,6 @@ class Obstacle(Goal):
         projectile.set_vx_vy(vx, vy)
         projectile.set_position(p_x, p_y)
         return True
-
 
 class Cannon:
     def __init__(self, x, y):

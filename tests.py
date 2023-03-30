@@ -1,5 +1,6 @@
-import math
-def pol(vel, angle):
-    return vel * math.cos(angle), -1 * vel * math.sin(angle)
+#create a list bigger then 32bit int
+object = 1
+limitTest = 2**32
+objectList = [object] * limitTest
 
-print(pol(0, 0))
+print(objectList)
